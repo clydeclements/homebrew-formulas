@@ -6,7 +6,7 @@ class SeismicUnix < Formula
   version "44R0"
   sha256 "e6bf4230673d0d327be6f01903fca41645d879198840464b9fc34616f4ffc71d"
 
-  option "without-src",     "Do not install the source"
+  option "without-src",     "Do not install the source (includes demos)"
   option "without-xtapps",  "Do not build X-toolkit applications"
   option "with-xmapps",     "Build Motif applications"
   option "with-fortran",    "Build Fortran codes"
@@ -23,12 +23,21 @@ class SeismicUnix < Formula
   depends_on :fortran if build.with?("fortran")
 
   keg_only <<-EOF.undent
-    Seismic Unix installs many commands that may conflict with other packages.
+    Seismic Unix installs many commands that may conflict with other formulas.
   EOF
 
   def install
-    cwproot = buildpath.dirname
-    ENV["CWPROOT"] = cwproot
+    ENV["CWPROOT"] = prefix
+    prefix.mkpath
+
+    # We build things under the prefix directory. The build process requires
+    # the src directory to be available there. As per the installation
+    # instructions, we create a symbolic link to the src directory in the
+    # temporary location where the source code has been extracted. Later we
+    # will remove this symbolic link.
+    ln_s buildpath, prefix/"src"
+    cd prefix/"src"
+
     ENV.append_to_cflags "-std=c90 -ansi -Wno-long-long"
     ENV.deparallelize
     if MacOS.version == :lion
@@ -105,12 +114,25 @@ class SeismicUnix < Formula
       end
     end
 
-    bin.install Dir[cwproot/"bin/*"]
-    include.install Dir[cwproot/"include/*"]
-    lib.install Dir[cwproot/"lib/*"]
+    # Remove the symbolic link to the source directory created above.
+    rm prefix/"src"
     if build.with? "src"
-      prefix.install Dir[cwproot/"src"]
+      prefix.install Dir[buildpath]
     end
+
+    # Create shell initialization files, especially important since we install
+    # this as a keg-only formula.
+    libexec.mkpath
+    system "echo \"export CWPROOT=#{opt_prefix}\" > #{libexec}/seismic-unix.sh"
+    system "echo \"export PATH=#{opt_prefix}/bin:\$PATH\" >>"\
+           " #{libexec}/seismic-unix.sh"
+    system "echo \"setenv CWPROOT #{opt_prefix}\" > #{libexec}/seismic-unix.csh"
+    system "echo \"set path = ( #{opt_prefix}/bin \$path )\" >>"\
+           " #{libexec}/seismic-unix.csh"
+    etc.install libexec/"seismic-unix.sh" => etc/"seismic-unix.sh" unless \
+      File.exist?(etc/"seismic-unix.sh")
+    etc.install libexec/"seismic-unix.csh" => etc/"seismic-unix.csh" unless \
+      File.exist?(etc/"seismic-unix.csh")
   end
 
   def caveats; <<-EOS.undent
@@ -118,10 +140,22 @@ class SeismicUnix < Formula
     a Free BSD style license). If this is unacceptable you should uninstall.
 
     For more information about the license, please see:
-    http://www.cwp.mines.edu/cwpcodes/LEGAL_STATEMENT
+      http://www.cwp.mines.edu/cwpcodes/LEGAL_STATEMENT
 
-    For more information on Seismic Unix, please see:
-    http://www.cwp.mines.edu/cwpcodes/
+    To give the developers of Seismic Unix at the Center for Wave Phenomena an
+    idea of who uses the code, consider joining the CWP/SU mailing list. If you
+    installed the Seismic Unix source, this can be accomplished by running the
+    script:
+      #{opt_prefix}/src/mailhome.sh
+
+    To use Seismic Unix, you should add the following command to your shell
+    initialization script (.bashrc/.profile/.zshrc/etc.), or call it directly
+    before using Seismic Unix:
+
+    - for bash/zsh users:
+        source #{etc}/seismic-unix.sh
+    - for csh/tcsh users:
+       source #{etc}/seismic-unix.csh
     EOS
   end
 end
