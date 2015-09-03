@@ -12,6 +12,7 @@ class SeismicUnix < Formula
   option "with-fortran",    "Build Fortran codes"
   option "with-glapps",     "Build Mesa/OpenGL applications"
   option "with-utils-lib",  "Build cwputils library"
+  option "with-segdread",   "Build SEG-D and SEG-B read utilities"
 
   depends_on :x11 if build.with?("xtapps") || build.with?("xmapps") || \
     build.with?("glapps")
@@ -97,6 +98,11 @@ class SeismicUnix < Formula
     end
     if build.with? "utils-lib"
       system "make", "utils"
+    end
+    if build.with? "segdread"
+      cd "Sfio" do
+        system "make"
+      end
     end
 
     bin.install Dir[cwproot/"bin/*"]
