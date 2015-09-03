@@ -46,11 +46,15 @@ class SeismicUnix < Formula
     # Set CC, C++, OPTC, FC, FOPTS
     optflags = "#{ENV["HOMEBREW_OPTFLAGS"]}"\
                " -#{ENV["HOMEBREW_OPTIMIZATION_LEVEL"]}"
+    foptflags = "#{ENV["HOMEBREW_OPTFLAGS"]}"\
+                " -#{ENV["HOMEBREW_OPTIMIZATION_LEVEL"]}"
+    # The Fortran codes do not compile with the "-march=native" flag.
+    foptflags.gsub! /-march=native/, ""
     inreplace "Makefile.config" do |s|
       s.gsub! /CC = .*/, "CC = #{ENV.cc}\nC++ = #{ENV.cxx}"
       s.change_make_var! "OPTC", "#{ENV.cflags} #{optflags}"
       s.change_make_var! "FC", "#{ENV.fc}"
-      s.change_make_var! "FOPTS", "#{ENV.fflags} #{ENV.fcflags} #{optflags}"
+      s.change_make_var! "FOPTS", "#{ENV.fflags} #{ENV.fcflags} #{foptflags}"
     end
 
     # Replace use of more program with cat in the license script to allow for
