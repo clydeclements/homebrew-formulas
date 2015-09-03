@@ -124,10 +124,10 @@ class SeismicUnix < Formula
     # this as a keg-only formula.
     libexec.mkpath
     system "echo \"export CWPROOT=#{opt_prefix}\" > #{libexec}/seismic-unix.sh"
-    system "echo \"export PATH=#{opt_prefix}/bin:\$PATH\" >>"\
+    system "echo \"export PATH=#{opt_prefix}/bin:\\$PATH\" >>"\
            " #{libexec}/seismic-unix.sh"
     system "echo \"setenv CWPROOT #{opt_prefix}\" > #{libexec}/seismic-unix.csh"
-    system "echo \"set path = ( #{opt_prefix}/bin \$path )\" >>"\
+    system "echo \"set path = ( #{opt_prefix}/bin \\$path )\" >>"\
            " #{libexec}/seismic-unix.csh"
     etc.install libexec/"seismic-unix.sh" => etc/"seismic-unix.sh" unless \
       File.exist?(etc/"seismic-unix.sh")
